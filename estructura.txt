@@ -1,0 +1,7 @@
+System: Codigos que cargen el sistema o clases (codigos que usen LG y UI para algo en especifico o empaquetado en uno solo).
+Dispositivos: Para unificar un nombre a los comandos, siendo sky, de ahi los nombres seguiran siendo distintos.
+Configuraciones: Pensado para mantener cosas sencillas como colores, que si se encesita opcion solo para salir cuando todo salioo bien pues que se omite, tiempos de sleep en niveles (nivel 5 = 5sg), etc etc
+Codigos: Donde se almacenan en un mismo nombre UI y LG, o CS (Interfaz y logica, o Codigo simple), en una misma carpeta =D
+
+En cada una hay un modulo.sh para cargar todo automaticamente.
+

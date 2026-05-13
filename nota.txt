@@ -1,0 +1,106 @@
+¡Tranquilo! Lo que te está pasando se llama "Spaghetti Code" y nos pasa a todos cuando un script pequeño empieza a crecer y a volverse una aplicación real. Estás intentando mezclar lógica de archivos con dibujo de pantalla, y eso en Bash es un dolor de cabeza por el manejo de coordenadas (tput).
+
+Para que no se te vaya de las manos, el secreto es la Modularidad. Aquí te doy un plan de rescate para limpiar ese código:
+
+1. El Error en tu Función UI
+Tienes un error de sintaxis que probablemente te esté rompiendo todo: te falta cerrar el case con esac y cerrar la función con }.
+
+Bash
+UI() {
+  local tipo="$1"
+  # ... (tus variables)
+  case "$tipo" in
+    LOADER)
+      LOADER_BAR "$2" "$3" "$4" "$5"
+      ;;
+    *)
+      helpUI
+      ;;
+  esac  # <--- Te faltaba esto
+}       # <--- Te faltaba esto
+2. Separa los "Pintores" de los "Trabajadores"
+El problema es que copiar_archivos sabe demasiado. Sabe copiar, sabe imprimir logs y sabe mover la barra. Vamos a separar la Lógica de la Interfaz.
+
+La Interfaz (El Pintor)
+Crea una función que solo dibuje el cascarón vacío:
+
+Bash
+draw_layout() {
+  clear
+  echo "================================="
+  echo "       $1" # Titulo
+  echo "================================="
+  echo ""
+  echo "  Logs de proceso:"
+  echo "  -------------------------------"
+  # Espacio para logs (líneas 6 a 15)
+  tput cup 16 0
+  echo "  -------------------------------"
+  echo "  Progreso:"
+}
+El Logger (El que escribe sin romper el dibujo)
+Tu función log está bien encaminada, pero vamos a asegurar que siempre escriba en su zona:
+
+Bash
+log() {
+  tput cup $LOG_LINE 4
+  tput el 
+  echo "-> $1"
+  ((LOG_LINE++))
+  [[ $LOG_LINE -gt 15 ]] && LOG_LINE=6
+}
+3. Optimización del "Sistema de Usuario"
+Para lo que querías de SkyMain o BlueMain, no necesitas if gigantes. Usa una variable y archivos dinámicos:
+
+Bash
+# Define esto al principio del cargar_sistema
+case "$USER_TYPE" in
+  sky)  perfil="SkyMain.sh" ;;
+  blue) perfil="BlueMain.sh" ;;
+  *)    perfil="Basico.sh" ;;
+esac
+
+copiar=("Basico.sh" "$perfil")
+4. ¿Cómo organizar el "Demasiado"?
+Para que el código no sea un bloque infinito, usa la técnica de archivos separados.
+
+Crea un archivo ui_helpers.sh (solo funciones de dibujo y colores).
+
+Crea un archivo logic_helpers.sh (copia de archivos, backups).
+
+En tu script principal, los llamas así:
+
+Bash
+source ./ui_helpers.sh
+source ./logic_helpers.sh
+El "Salvavidas" para tu Barra de Carga
+Si sientes que la barra de carga es muy compleja, simplifica el bucle de copia. Aquí tienes una versión limpia que puedes insertar en tu lógica:
+
+Bash
+copiar_archivos() {
+  LOG_LINE=6
+  draw_layout "INSTALANDO SISTEMA"
+  
+  local total=${#copiar[@]}
+  local progreso=0
+
+  for archivo in "${copiar[@]}"; do
+    log "Instalando: $archivo..."
+    sleep 0.5 # Simula trabajo
+    
+    if [[ -f "$archivo" ]]; then
+       # Lógica de copiado aquí
+       ((progreso++))
+       loading_bar $progreso $total
+    else
+       log "ERROR: $archivo no encontrado"
+    fi
+  done
+  log "¡Proceso finalizado!"
+}
+¿Por qué se siente "Imposible"?
+Porque estás usando tput cup (coordenadas fijas). Si añades un echo de más arriba, todas las coordenadas de abajo se desalinean.
+
+Mi consejo: No te obsesiones con que se vea perfecto como una App de Windows. En Bash, menos es más. Si la interfaz te quita más tiempo que la lógica, borra la interfaz y deja que los echo fluyan hacia abajo normalmente.
+
+¿Quieres que te ayude a armar el sistema de "Elección de Usuario" (Sky/Blue) de forma que se guarde permanentemente?

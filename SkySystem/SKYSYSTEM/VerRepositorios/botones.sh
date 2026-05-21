@@ -8,6 +8,7 @@ boton_guardar_cambios() {
 
 boton_add_carpeta() {
   ESTADO="ADD_CARPETA"
+  sleep 1
 }
 
 boton_add_repositorio() {

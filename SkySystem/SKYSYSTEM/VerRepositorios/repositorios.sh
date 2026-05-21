@@ -28,52 +28,7 @@ obtener_repos_github() {
 
 # Para guardar un repositorio en especifico
 interfaz_guardar_cambios() {
-    local repo_nombre=$1
-    # Buscamos la ruta real en el archivo .dat usando el nombre
-    local ruta_repo=$(grep "^$repo_nombre:" "$RUTA_DAT" | cut -d':' -f2)
-
-    # 1. Verificar si la ruta existe
-    if [ ! -d "$ruta_repo" ]; then
-        echo -e "${RED}Error: La carpeta no existe en $ruta_repo${RESET}"
-        sleep 2
-        return
-    fi
-
-    cd "$ruta_repo" || return
-    clear
-    echo "=========================================="
-    echo "  Sincronizando: $repo_nombre"
-    echo "=========================================="
-
-    # 2. Verificar si hay cambios reales
-    if [ -z "$(git status --porcelain)" ]; then
-        echo "No hay cambios para subir. Todo al día =D"
-        sleep 1
-    else
-        echo "Se detectaron cambios. Subiendo..."
-
-        # 3. Proceso de Git
-        git add .
-
-        # Pedir mensaje de commit rápido
-        echo -n "Mensaje del commit: "
-        read -r mensaje
-        [ -z "$mensaje" ] && mensaje="Update desde SKYSYSTEM $(date +'%Y-%m-%d %H:%M')"
-
-        git commit -m "$mensaje"
-
-        echo "Haciendo Push a GitHub..."
-        if git push; then
-            echo -e "${VERDE}✓ ¡Sincronización exitosa!${RESET}"
-        else
-            echo -e "${RED}✗ Error al subir. Revisa tu conexión."
-        fi
-        sleep 2
-    fi
-
-    # Volver a la carpeta del script para no romper la interfaz
-    cd - > /dev/null
-    ESTADO="INICIO"
+  save $1
 }
 
 
@@ -111,7 +66,16 @@ interfaz_add_repositorio() {
     echo "=========================================="
     echo "    BUSCANDO REPOSITORIOS EN GITHUB...   "
     echo "=========================================="
-    
+
+    # 0. Verificar
+    if ! command -v gh >/dev/null 2>&1; then
+         echo "GitHub CLI no encontrado."
+         echo "Instálalo desde:"
+         echo "https://cli.github.com/"
+    fi
+
+echo "gh encontrado correctamente"
+
     # 1. Guardar los repositorios en un array de Bash
     mapfile -t REPOS < <(obtener_repos_github)
 
@@ -119,7 +83,6 @@ interfaz_add_repositorio() {
         echo -e "${RED}✗ No se encontraron repositorios o no estás autenticado con 'gh auth login'.${RESET}"
         sleep 2
         ESTADO="INICIO"
-        return
     fi
 
     echo "Selecciona el repositorio que deseas clonar:"

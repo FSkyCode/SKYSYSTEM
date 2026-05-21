@@ -18,6 +18,12 @@ obtener_ruta() {
 }
 # Ejemplo de uso:
 # RUTA_A_USAR=$(obtener_ruta "Happy-Bird")
+obtener_repos_github() {
+    # gh repo list devuelve: "usuario/nombre-repo  descripción..."
+    # Usamos awk para quedarnos solo con el "nombre-repo" después del '/'
+    gh repo list --limit 100 | awk '{print $1}' | cut -d'/' -f2
+}
+
 
 
 add_carpeta() {
@@ -48,23 +54,41 @@ add_repositorio() {
 }
 
 interfaz_add_repositorio() {
-  clear
-  echo "=========================================="
-  echo "      AGREGAR NUEVO REPOSITORIO"
-  echo "=========================================="
-  echo -n "Introduce el nombre del repo en GitHub: "
-  read -r nombre_nuevo
-  
-  if [ -n "$nombre_nuevo" ]; then
-    add_repositorio "$nombre_nuevo" && ESTADO="INICIO"
-    # Opcional: Recargar la lista de REPOSITORIOS (ver nota abajo)
-  else
-    echo "Operación cancelada."
-    sleep 1
-    ESTADO="INICIO"
-    fi
-}
+    clear
+    echo "=========================================="
+    echo "    BUSCANDO REPOSITORIOS EN GITHUB...   "
+    echo "=========================================="
+    
+    # 1. Guardar los repositorios en un array de Bash
+    mapfile -t REPOS < <(obtener_repos_github)
 
+    if [ ${#REPOS[@]} -eq 0 ]; then
+        echo -e "${RED}✗ No se encontraron repositorios o no estás autenticado con 'gh auth login'.${RESET}"
+        sleep 2
+        ESTADO="INICIO"
+        return
+    fi
+
+    echo "Selecciona el repositorio que deseas clonar:"
+    echo "------------------------------------------"
+    
+    # 2. Menú interactivo numerado
+    select repo_seleccionado in "${REPOS[@]}" "Cancelar y volver"; do
+        if [ "$repo_seleccionado" = "Cancelar y volver" ]; then
+            echo "Operación cancelada."
+            sleep 1
+            break
+        elif [ -n "$repo_seleccionado" ]; then
+            # 3. Si seleccionó un repo válido, llamamos a tu función original
+            add_repositorio "$repo_seleccionado"
+            break
+        else
+            echo "Opción inválida. Elige un número de la lista."
+        fi
+    done
+
+    ESTADO="INICIO"
+}
 
 interfaz_quitar_repositorio() {
     local repo_actual="$1"

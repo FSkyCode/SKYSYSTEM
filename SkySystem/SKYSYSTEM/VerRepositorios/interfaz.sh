@@ -3,7 +3,7 @@ ESTADO="INICIO"
 SECCION=0 # 0 para Repositorios, 1 para Opciones
 
 USUARIO="FSkyCode"
-OPCIONES=( "Guardar cambios" "Agregar nuevo repositorio" "Eliminar repositorio" "Ver creditos" )
+OPCIONES=( "Guardar cambios" "Agregar categoria" "Agregar nuevo repositorio" "Eliminar repositorio" "Ver creditos" )
 
 indice_repositorios=0
 indice_opciones=0
@@ -18,38 +18,52 @@ CYAN='\033[36m'
 
 # Definimos la ruta al archivo
 ARCHIVO_DATA="data/rutas.dat"
-# Creamos el array vacío
-REPOSITORIOS=()
-# Leemos el archivo y llenamos el array
-if [[ -f "$ARCHIVO_DATA" ]]; then
-    while IFS= read -r linea || [[ -n "$linea" ]]; do
-        # Extraemos solo el nombre del repo (lo que está después de la última /)
-        nombre_repo=$(basename "$linea")
-        
-        # Lo añadimos al array
-        REPOSITORIOS+=("$nombre_repo")
-    done < "$ARCHIVO_DATA"
-else
-    echo "Error: No se encontró $ARCHIVO_DATA"
-fi
 
+reload_listaRepositorios() {
+  REPOSITORIOS=()
+  # Leemos el archivo y llenamos el array
+  if [[ -f "$ARCHIVO_DATA" ]]; then
+      while IFS= read -r linea || [[ -n "$linea" ]]; do
+          # Extraemos solo el nombre del repo (lo que está después de la última /)
+          nombre_repo=$(basename "$linea")
+
+          # Lo añadimos al array
+          REPOSITORIOS+=("$nombre_repo")
+      done < "$ARCHIVO_DATA"
+  else
+      echo "Error: No se encontró $ARCHIVO_DATA"
+  fi
+}
 
 # Funciones de índice circular
 get_indice() {
     local index=$1
     local total=$2
+
+    if [ $total -le 0 ]; then
+        echo 0
+        return
+    fi
+
     echo $(( (index + total) % total ))
 }
 
 # Dibujar una lista tipo carrusel (3 elementos)
 dibujar_carrusel() {
-    local lista=("${!1}") # Pasamos el array por referencia
+    local lista=("${!1}")
     local indice_actual=$2
-    local es_seccion_activa=$3
     local total=${#lista[@]}
+    local es_seccion_activa=$3
 
     for i in -1 0 1; do
-        local idx=$(get_indice $((indice_actual + i)) $total)
+        local idx=$((indice_actual + i))
+
+        # Si no existe, imprimir vacío
+        if [ $idx -lt 0 ] || [ $idx -ge $total ]; then
+            echo ""
+            continue
+        fi
+
         local nombre="${lista[$idx]}"
 
         if [ $i -eq 0 ]; then
@@ -118,16 +132,19 @@ input_read() {
             # Revisamos qué número de opción (Acción) está seleccionada
             case $indice_opciones in
               0) # "Guardar cambios"
-                guardar_cambios "$repo_actual"
+                boton_guardar_cambios
                 ;;
-              1) # "Agregar nuevo"
-                agregar_repositorio
+              1)
+		boton_add_carpeta
+		;;
+              2) # "Agregar nuevo"
+                boton_add_repositorio
                 ;;
-              2) # "Eliminar"
-                quitar_repositorio
+              3) # "Eliminar"
+                boton_quit_repositorio
                 ;;
-              3) # "Ver créditos"
-                ver_creditos
+              4) # "Ver créditos"
+                boton_ver_creditos
                 ;;
             esac
             ;;
@@ -136,14 +153,19 @@ input_read() {
 
 # Terminal - UI
 while true; do
+    reload_listaRepositorios
     if [ "$ESTADO" = "INICIO" ]; then
         inicio
     elif [ "$ESTADO" = "SALIR" ]; then
         break
-    elif [ "$ESTADO" = "AGREGAR_REPOSITORIO" ]; then
+    elif [ "$ESTADO" = "GUARDAR_CAMBIOS" ]; then
+        interfaz_guardar_cambios "$repo_actual"
+    elif [ "$ESTADO" = "ADD_CARPETA" ]; then
+        interfaz_add_carpeta
+    elif [ "$ESTADO" = "ADD_REPOSITORIO" ]; then
         interfaz_add_repositorio
-    elif [ "$ESTADO" = "QUITAR_REPOSITORIO" ]; then
-        interfaz_quitar_repositorio "$repo_actual"
+    elif [ "$ESTADO" = "QUIT_REPOSITORIO" ]; then
+        interfaz_quit_repositorio "$repo_actual"
     fi
 done
 echo "¡Nos vemos, FSkyCode!"

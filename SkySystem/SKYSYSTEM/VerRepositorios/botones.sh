@@ -1,24 +1,26 @@
 #!/bin/bash
 
-# Esta función recibirá el nombre del repo y hará el trabajo
-guardar_cambios() {
-    local repo=$1
-    echo -e "\n[LOG] Guardando cambios en: $repo..."
-    # Aquí es donde luego pondrás: git add . && git commit...
-    sleep 2
-}
-
-agregar_repositorio() {
-  ESTADO="AGREGAR_REPOSITORIO"
+# Estas funciones recibiran el nombre del repo y haran el trabajo
+boton_guardar_cambios() {
+  ESTADO="GUARDAR_CAMBIOS"
   sleep 1
 }
 
-quitar_repositorio() {
-  ESTADO="QUITAR_REPOSITORIO"
+boton_add_carpeta() {
+  ESTADO="ADD_CARPETA"
+}
+
+boton_add_repositorio() {
+  ESTADO="ADD_REPOSITORIO"
   sleep 1
 }
 
-ver_creditos() {
+boton_quit_repositorio() {
+  ESTADO="QUIT_REPOSITORIO"
+  sleep 1
+}
+
+boton_ver_creditos() {
     clear
     echo "=========================================="
     echo " Creado por: FSkyCode (Juan Felipe)"

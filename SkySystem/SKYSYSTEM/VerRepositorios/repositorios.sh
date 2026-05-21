@@ -20,8 +20,61 @@ obtener_ruta() {
 # RUTA_A_USAR=$(obtener_ruta "Happy-Bird")
 
 
-add_carpeta() {
+# Para guardar un repositorio en especifico
+interfaz_guardar_cambios() {
+    local repo_nombre=$1
+    # Buscamos la ruta real en el archivo .dat usando el nombre
+    local ruta_repo=$(grep "^$repo_nombre:" "$RUTA_DAT" | cut -d':' -f2)
+
+    # 1. Verificar si la ruta existe
+    if [ ! -d "$ruta_repo" ]; then
+        echo -e "${RED}Error: La carpeta no existe en $ruta_repo${RESET}"
+        sleep 2
+        return
+    fi
+
+    cd "$ruta_repo" || return
+    clear
+    echo "=========================================="
+    echo "  Sincronizando: $repo_nombre"
+    echo "=========================================="
+
+    # 2. Verificar si hay cambios reales
+    if [ -z "$(git status --porcelain)" ]; then
+        echo "No hay cambios para subir. Todo al día =D"
+        sleep 1
+    else
+        echo "Se detectaron cambios. Subiendo..."
+
+        # 3. Proceso de Git
+        git add .
+
+        # Pedir mensaje de commit rápido
+        echo -n "Mensaje del commit: "
+        read -r mensaje
+        [ -z "$mensaje" ] && mensaje="Update desde SKYSYSTEM $(date +'%Y-%m-%d %H:%M')"
+
+        git commit -m "$mensaje"
+
+        echo "Haciendo Push a GitHub..."
+        if git push; then
+            echo -e "${VERDE}✓ ¡Sincronización exitosa!${RESET}"
+        else
+            echo -e "${RED}✗ Error al subir. Revisa tu conexión."
+        fi
+        sleep 2
+    fi
+
+    # Volver a la carpeta del script para no romper la interfaz
+    cd - > /dev/null
+    ESTADO="INICIO"
+}
+
+
+interfaz_add_carpeta() {
   echo "Para separar por categoria lol"
+  sleep 1
+  ESTADO="INICIO"
 }
 
 
@@ -66,7 +119,7 @@ interfaz_add_repositorio() {
 }
 
 
-interfaz_quitar_repositorio() {
+interfaz_quit_repositorio() {
     local repo_actual="$1"
 
     clear
@@ -82,8 +135,14 @@ interfaz_quitar_repositorio() {
         
         # El símbolo ^ indica "inicio de línea"
         # Así evitamos borrar por error algo que contenga el nombre pero no sea el ID
+        ruta_repo=$(obtener_ruta "$repo_actual")
         if sed -i "/^$repo_actual:/d" "$RUTA_DAT"; then
-            echo "¡Listo! Repositorio quitado de la lista."
+           echo "¡Listo! Repositorio quitado de la lista."
+           if rm -rf "$ruta_repo"; then
+	     echo "¡Listo! Repositorio eliminado"
+           else
+	     echo "No se pudo eliminar... Tener a cuenta!"
+           fi
         else
             echo "Error: No se encontró el registro."
         fi
